@@ -18,6 +18,10 @@ if [ -d "$HOME/Library/Application Support/Code/User" ]; then
 fi
 
 echo "🔄 Reloading shell configuration..."
-source ~/.zshrc
+if [ "$SHELL" = "/bin/zsh" ] || [ "$SHELL" = "/usr/local/bin/zsh" ] || [ "$SHELL" = "/opt/homebrew/bin/zsh" ]; then
+    zsh -c "source ~/.zshrc"
+else
+    echo "⚠️  Please restart your terminal or run 'source ~/.zshrc' in a zsh shell"
+fi
 
 echo "✅ Sync to system complete!"
