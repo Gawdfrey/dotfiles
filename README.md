@@ -38,6 +38,22 @@ After running the installer:
 2. **GitHub**: `gh auth login`
 3. **Terminal**: Restart or `source ~/.zshrc`
 
+## Keeping Dotfiles Synced
+
+### From System to Repository
+When you make changes to your configs:
+```bash
+./sync-from-system.sh  # Pull latest configs from system
+./push.sh              # Commit and push to GitHub
+```
+
+### From Repository to System
+When you pull updates from GitHub:
+```bash
+git pull origin main
+./sync-to-system.sh    # Apply changes to system
+```
+
 ## Files
 
 - `.zshrc` - Zsh configuration with Oh My Zsh
