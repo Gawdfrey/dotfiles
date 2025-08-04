@@ -1,0 +1,8 @@
+ms-vscode.vscode-typescript-next
+bradlc.vscode-tailwindcss
+esbenp.prettier-vscode
+formulahendry.auto-rename-tag
+biomejs.biome
+vscode-icons-team.vscode-icons
+phoenisx.cssvar
+dbaeumer.vscode-eslint
