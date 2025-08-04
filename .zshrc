@@ -81,25 +81,67 @@ export EDITOR='code --wait'
 
 autoload -U +X bashcompinit && bashcompinit
 
-# Completions
-source ~/az.completion
-source <(kubectl completion zsh)
+# Lazy load completions for faster startup
+_lazy_load_completions() {
+    # Only load if not already loaded
+    if [[ -z "$_COMPLETIONS_LOADED" ]]; then
+        export _COMPLETIONS_LOADED=1
+        
+        # Azure CLI completion
+        if [[ -f ~/az.completion ]]; then
+            source ~/az.completion
+        fi
+        
+        # Kubernetes completions
+        if command -v kubectl &> /dev/null; then
+            source <(kubectl completion zsh)
+        fi
+        
+        # kubectx and kubens completions
+        local brew_prefix="${HOMEBREW_PREFIX:-$(brew --prefix 2>/dev/null)}"
+        if [[ -n "$brew_prefix" ]]; then
+            [[ -f "$brew_prefix/opt/kubectx/etc/bash_completion.d/kubectx" ]] && source "$brew_prefix/opt/kubectx/etc/bash_completion.d/kubectx"
+            [[ -f "$brew_prefix/opt/kubectx/etc/bash_completion.d/kubens" ]] && source "$brew_prefix/opt/kubectx/etc/bash_completion.d/kubens"
+        fi
+        
+        # Helm completion
+        if command -v helm &> /dev/null; then
+            source <(helm completion zsh)
+        fi
+        
+        # 1Password completion
+        if command -v op &> /dev/null; then
+            eval "$(op completion zsh)"; compdef _op op
+        fi
+    fi
+}
 
-# kubectx and kubens completions (from their install location)
-if [ -f "$(brew --prefix)/opt/kubectx/etc/bash_completion.d/kubectx" ]; then
-    source "$(brew --prefix)/opt/kubectx/etc/bash_completion.d/kubectx"
-fi
-if [ -f "$(brew --prefix)/opt/kubectx/etc/bash_completion.d/kubens" ]; then
-    source "$(brew --prefix)/opt/kubectx/etc/bash_completion.d/kubens"
-fi
+# Lazy load completions on first tab completion
+autoload -Uz compinit
+compinit -C  # Skip security check for faster startup
 
-# Helm completion
-if command -v helm &> /dev/null; then
-    source <(helm completion zsh)
-fi
+# Hook to load completions on first tab press
+_completion_loader() {
+    unset -f _completion_loader
+    _lazy_load_completions
+    # Call original completion
+    zle expand-or-complete
+}
+zle -N _completion_loader
+bindkey '^I' _completion_loader
 
-eval "$(op completion zsh)"; compdef _op op
-eval "$(github-copilot-cli alias -- "$0")"
+# Cache brew prefix for better performance
+export HOMEBREW_PREFIX="${HOMEBREW_PREFIX:-/opt/homebrew}"
+
+# Lazy load GitHub Copilot CLI
+_github_copilot_loader() {
+    unset -f github-copilot-cli
+    if command -v github-copilot-cli &> /dev/null; then
+        eval "$(github-copilot-cli alias -- "$0")"
+    fi
+    github-copilot-cli "$@"
+}
+alias github-copilot-cli='_github_copilot_loader'
 
 # Go
 export GOPATH="$HOME/go"
@@ -151,21 +193,46 @@ load-nvmrc
 # NOTE: Replace with your actual NPM token or use environment variable
 # export NPM_TOKEN="your_token_here"
 
-# fzf integration for better completions
-if command -v fzf &> /dev/null; then
-    source <(fzf --zsh)
-    
-    # fzf options
-    export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --ansi"
-    export FZF_DEFAULT_COMMAND="fd --type file --hidden --follow --exclude .git"
-    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
-    export FZF_ALT_C_COMMAND="fd --type directory --hidden --follow --exclude .git"
-fi
+# fzf integration for better completions (lazy loaded)
+_load_fzf() {
+    if command -v fzf &> /dev/null && [[ -z "$_FZF_LOADED" ]]; then
+        export _FZF_LOADED=1
+        source <(fzf --zsh)
+        
+        # fzf options
+        export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --ansi"
+        export FZF_DEFAULT_COMMAND="fd --type file --hidden --follow --exclude .git"
+        export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+        export FZF_ALT_C_COMMAND="fd --type directory --hidden --follow --exclude .git"
+    fi
+}
 
-eval "$(starship init zsh)"
+# Load fzf when first used
+for cmd in fzf **; do
+    eval "${cmd}() { _load_fzf; unset -f ${cmd}; ${cmd} \$@; }"
+done
+
+# Lazy load starship prompt
+if command -v starship &> /dev/null; then
+    eval "$(starship init zsh)"
+fi
 
 . "$HOME/.local/bin/env"
 export PATH="$HOME/.local/bin:$PATH"
+
+# Clean up old z database files periodically to prevent startup slowdown
+_cleanup_z_files() {
+    local z_count=$(ls ~/.z.* 2>/dev/null | wc -l)
+    if [[ $z_count -gt 10 ]]; then
+        # Keep only the 5 most recent z database files
+        ls -t ~/.z.* 2>/dev/null | tail -n +6 | xargs rm -f 2>/dev/null
+    fi
+}
+
+# Run cleanup occasionally (1 in 20 shells)
+if [[ $((RANDOM % 20)) -eq 0 ]]; then
+    _cleanup_z_files
+fi
 
 alias claude="$HOME/.claude/local/claude"
 
