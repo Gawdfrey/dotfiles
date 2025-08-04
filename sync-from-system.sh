@@ -5,8 +5,16 @@ echo "📥 Syncing changes from system to dotfiles..."
 # Copy current configs to dotfiles
 cp ~/.zshrc .zshrc
 cp ~/.gitconfig .gitconfig
+cp ~/.gitignore_global .gitignore_global 2>/dev/null || echo "# Global gitignore not found"
+cp ~/.editorconfig .editorconfig 2>/dev/null || echo "# EditorConfig not found"
 cp ~/.ssh/config .ssh/config
 cp ~/.nvmrc .nvmrc 2>/dev/null || echo "22" > .nvmrc
+
+# VS Code settings
+if [ -f "$HOME/Library/Application Support/Code/User/settings.json" ]; then
+    cp "$HOME/Library/Application Support/Code/User/settings.json" vscode-settings.json
+    echo "✅ VS Code settings copied"
+fi
 
 # Update Brewfile
 echo "📦 Updating Brewfile..."

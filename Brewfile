@@ -41,6 +41,15 @@ brew "python@3.10"
 brew "python@3.12"
 brew "uv"
 
+# Modern CLI Tools
+brew "fzf"
+brew "bat"
+brew "eza"
+brew "fd"
+brew "ripgrep"
+brew "tldr"
+brew "git-delta"
+
 # CLI Utilities
 brew "jq"
 brew "wget"

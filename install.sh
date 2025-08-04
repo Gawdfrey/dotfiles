@@ -24,9 +24,17 @@ fi
 echo "🔗 Creating symlinks..."
 ln -sf "$PWD/.zshrc" "$HOME/.zshrc"
 ln -sf "$PWD/.gitconfig" "$HOME/.gitconfig"
+ln -sf "$PWD/.gitignore_global" "$HOME/.gitignore_global"
+ln -sf "$PWD/.editorconfig" "$HOME/.editorconfig"
 mkdir -p "$HOME/.ssh"
 ln -sf "$PWD/.ssh/config" "$HOME/.ssh/config"
 ln -sf "$PWD/.nvmrc" "$HOME/.nvmrc"
+
+# VS Code settings
+if [ -d "$HOME/Library/Application Support/Code/User" ]; then
+    ln -sf "$PWD/vscode-settings.json" "$HOME/Library/Application Support/Code/User/settings.json"
+    echo "✅ VS Code settings linked"
+fi
 
 # Install Node.js and global packages
 echo "🟢 Setting up Node.js..."
@@ -39,6 +47,10 @@ echo "📝 Installing VS Code extensions..."
 # Install Starship prompt
 echo "🚀 Installing Starship prompt..."
 curl -sS https://starship.rs/install.sh | sh -s -- -y
+
+# Setup fzf
+echo "🔍 Setting up fzf..."
+$(brew --prefix)/opt/fzf/install --all
 
 echo "✅ Setup complete! Please restart your terminal or run 'source ~/.zshrc'"
 echo "📝 Don't forget to:"

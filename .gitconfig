@@ -24,7 +24,7 @@
 			git commit --amend -m \"$(git log -1 --pretty=%B)\n\nCloses #$1.\"; \
 		fi \
 	}; f"
-	excludesfile = ~/.gitignore
+	excludesfile = ~/.gitignore_global
 	attributesfile = ~/.gitattributes
 [color "branch"]
 	current = yellow reverse
@@ -35,6 +35,16 @@
 	frag = magenta bold
 	old = red bold
 	new = green bold
+
+[delta]
+	navigate = true
+	light = false
+	syntax-theme = Dracula
+	line-numbers = true
+	side-by-side = true
+
+[interactive]
+	diffFilter = delta --color-only
 [color "status"]
 	added = yellow
 	changed = green

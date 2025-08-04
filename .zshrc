@@ -83,8 +83,35 @@ eval "$(github-copilot-cli alias -- "$0")"
 export GOPATH="$HOME/go"
 export PATH="$PATH:/usr/local/go/bin:$GOPATH/bin"
 
+# Lazy load NVM for faster shell startup
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+nvm() {
+    unset -f nvm
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    nvm "$@"
+}
+
+# Auto-use .nvmrc when changing directories
+autoload -U add-zsh-hook
+load-nvmrc() {
+    local node_version="$(nvm version)"
+    local nvmrc_path="$(nvm_find_nvmrc)"
+    
+    if [ -n "$nvmrc_path" ]; then
+        local nvmrc_node_version=$(nvm version "$(cat "${nvmrc_path}")")
+        
+        if [ "$nvmrc_node_version" = "N/A" ]; then
+            nvm install
+        elif [ "$nvmrc_node_version" != "$node_version" ]; then
+            nvm use
+        fi
+    elif [ "$node_version" != "$(nvm version default)" ]; then
+        echo "Reverting to nvm default version"
+        nvm use default
+    fi
+}
+add-zsh-hook chpwd load-nvmrc
+load-nvmrc
 
 # NOTE: Replace with your actual NPM token or use environment variable
 # export NPM_TOKEN="your_token_here"
@@ -97,3 +124,21 @@ eval "$(starship init zsh)"
 export PATH="$HOME/.local/bin:$PATH"
 
 alias claude="$HOME/.claude/local/claude"
+
+# Modern CLI tool aliases
+alias ll="eza -la --git --header"
+alias ls="eza --color=always --group-directories-first"
+alias lt="eza --tree --level=2"
+alias cat="bat --paging=never"
+alias find="fd"
+alias grep="rg"
+alias preview="fzf --preview 'bat --color=always --style=numbers --line-range=:500 {}'"
+
+# Productivity aliases
+alias ..="cd .."
+alias ...="cd ../.."
+alias ....="cd ../../.."
+alias ~="cd ~"
+alias c="clear"
+alias h="history | grep"
+alias ports="netstat -tulanp"
