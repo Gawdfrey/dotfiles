@@ -23,6 +23,13 @@ plugins=(
 source $ZSH/oh-my-zsh.sh
 PROMPT='$(kube_ps1)'$PROMPT
 
+# Better completion settings
+zstyle ':completion:*' menu select
+zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*:descriptions' format '[%d]'
+zstyle ':completion:*:warnings' format 'No matches found'
+
 # User configuration
 eval "$(direnv hook zsh)"
 
@@ -73,8 +80,23 @@ export PATH="$PNPM_HOME:$PATH"
 export EDITOR='code --wait'
 
 autoload -U +X bashcompinit && bashcompinit
+
+# Completions
 source ~/az.completion
 source <(kubectl completion zsh)
+
+# kubectx and kubens completions (from their install location)
+if [ -f "$(brew --prefix)/opt/kubectx/etc/bash_completion.d/kubectx" ]; then
+    source "$(brew --prefix)/opt/kubectx/etc/bash_completion.d/kubectx"
+fi
+if [ -f "$(brew --prefix)/opt/kubectx/etc/bash_completion.d/kubens" ]; then
+    source "$(brew --prefix)/opt/kubectx/etc/bash_completion.d/kubens"
+fi
+
+# Helm completion
+if command -v helm &> /dev/null; then
+    source <(helm completion zsh)
+fi
 
 eval "$(op completion zsh)"; compdef _op op
 eval "$(github-copilot-cli alias -- "$0")"
@@ -115,6 +137,17 @@ load-nvmrc
 
 # NOTE: Replace with your actual NPM token or use environment variable
 # export NPM_TOKEN="your_token_here"
+
+# fzf integration for better completions
+if command -v fzf &> /dev/null; then
+    source <(fzf --zsh)
+    
+    # fzf options
+    export FZF_DEFAULT_OPTS="--height 40% --layout=reverse --border --ansi"
+    export FZF_DEFAULT_COMMAND="fd --type file --hidden --follow --exclude .git"
+    export FZF_CTRL_T_COMMAND="$FZF_DEFAULT_COMMAND"
+    export FZF_ALT_C_COMMAND="fd --type directory --hidden --follow --exclude .git"
+fi
 
 eval "$(starship init zsh)"
 
