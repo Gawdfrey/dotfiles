@@ -107,29 +107,42 @@ export PATH="$PATH:/usr/local/go/bin:$GOPATH/bin"
 
 # Lazy load NVM for faster shell startup
 export NVM_DIR="$HOME/.nvm"
+_load_nvm() {
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+}
+
 nvm() {
     unset -f nvm
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    _load_nvm
     nvm "$@"
 }
 
 # Auto-use .nvmrc when changing directories
 autoload -U add-zsh-hook
 load-nvmrc() {
-    local node_version="$(nvm version)"
-    local nvmrc_path="$(nvm_find_nvmrc)"
+    # Only run if nvm is available and we haven't loaded it yet
+    if [[ -f "$NVM_DIR/nvm.sh" ]] && ! command -v nvm_find_nvmrc &> /dev/null; then
+        _load_nvm
+    fi
     
-    if [ -n "$nvmrc_path" ]; then
-        local nvmrc_node_version=$(nvm version "$(cat "${nvmrc_path}")")
+    # Now check for .nvmrc if nvm is loaded
+    if command -v nvm_find_nvmrc &> /dev/null; then
+        local node_version="$(nvm version)"
+        local nvmrc_path="$(nvm_find_nvmrc)"
         
-        if [ "$nvmrc_node_version" = "N/A" ]; then
-            nvm install
-        elif [ "$nvmrc_node_version" != "$node_version" ]; then
-            nvm use
+        if [ -n "$nvmrc_path" ]; then
+            local nvmrc_node_version=$(nvm version "$(cat "${nvmrc_path}")")
+            
+            if [ "$nvmrc_node_version" = "N/A" ]; then
+                nvm install
+            elif [ "$nvmrc_node_version" != "$node_version" ]; then
+                nvm use
+            fi
+        elif [ "$node_version" != "$(nvm version default)" ]; then
+            echo "Reverting to nvm default version"
+            nvm use default
         fi
-    elif [ "$node_version" != "$(nvm version default)" ]; then
-        echo "Reverting to nvm default version"
-        nvm use default
     fi
 }
 add-zsh-hook chpwd load-nvmrc
@@ -150,8 +163,6 @@ if command -v fzf &> /dev/null; then
 fi
 
 eval "$(starship init zsh)"
-
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 
 . "$HOME/.local/bin/env"
 export PATH="$HOME/.local/bin:$PATH"
